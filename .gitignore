@@ -1,0 +1,8 @@
+/*/
+!CheckSimilarity/
+CheckSimilarity/Debug/
+CheckSimilarity/Release/
+
+CheckSimilarity.sln
+*.aps
+*.xlsx
