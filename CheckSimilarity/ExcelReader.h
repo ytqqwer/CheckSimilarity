@@ -8,9 +8,20 @@ public:
 	ExcelReader();
 	~ExcelReader();
 
+	void addXlsxFile(const std::string& filename);
+
+
 	void loadXlsxFile(const std::string& filename);
+
+	void loadXlsxFile(const std::string& pattern,const std::string& partOfSpeech);
+
+
 	bool isOpenFile();
+
+
 	bool nextWord();	// 如果已达到最后一行，则返回false	
+
+
 	void selectColumn(const std::string& columnName);
 	std::string getCurCellValueInColumn(const std::string& columnName);
 
@@ -22,6 +33,8 @@ private:
 
 	unsigned int curRow;
 	unsigned int maxRow;
+
+	std::vector<std::string> fileNames;
 
 	std::vector<std::pair<std::string, xlnt::cell_vector>> selColumns;	//已选择的列，需要指定列名
 	

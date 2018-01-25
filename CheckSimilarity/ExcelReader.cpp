@@ -2,6 +2,8 @@
 #include "ExcelReader.h"
 #include <codecvt>
 
+#include <regex>							//正则表达式
+
 ExcelReader::ExcelReader()
 {
 	curRow = 1;
@@ -12,12 +14,19 @@ ExcelReader::~ExcelReader()
 {
 }
 
+void ExcelReader::addXlsxFile(const std::string & filename)
+{
+	fileNames.push_back(filename);
+}
+
 void ExcelReader::loadXlsxFile(const std::string & filename)
 {
 	if (isOpen) {
+		//重置状态
 		delete wb;
 		curRow = 1;
 		selColumns.clear();
+		fileNames.clear();
 		//isOpen = false;
 	}
 
@@ -31,6 +40,25 @@ void ExcelReader::loadXlsxFile(const std::string & filename)
 	maxRow = rows.length() - 1;
 
 	isOpen = true;
+
+}
+
+void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & partOfSpeech)
+{
+	std::regex re(pattern);
+
+	for (auto tmp : fileNames) {
+		bool ret = std::regex_match(tmp, re);
+
+
+
+		if (ret)
+			break;
+		else 
+			fprintf(stderr, "%s, can not match\n", tmp.c_str());
+
+	}
+
 
 }
 
