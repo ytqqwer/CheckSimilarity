@@ -8,35 +8,43 @@ public:
 	ExcelReader();
 	~ExcelReader();
 
-	void addXlsxFile(const std::string& filename);
+	void addXlsxFileName(const std::string& filename);
 
+	void clear();
+	
+	void loadXlsxFile(const std::string& pattern, const std::string& partOfSpeech, const std::string& path);
 
-	void loadXlsxFile(const std::string& filename);
+	void setPartOfSpeech(const std::string&);
 
-	void loadXlsxFile(const std::string& pattern,const std::string& partOfSpeech);
-
-
-	bool isOpenFile();
-
+	void changeWorkbook();
+	bool nextWorkbook();
 
 	bool nextWord();	// 如果已达到最后一行，则返回false	
 
+	bool isExistingFile();
 
 	void selectColumn(const std::string& columnName);
 	std::string getCurCellValueInColumn(const std::string& columnName);
 
 private:
-	bool isOpen;
+	
+	bool existingFile;
 
-	xlnt::workbook* wb;
-	xlnt::worksheet ws;
+	std::string curPartOfSpeech;
 
+	xlnt::workbook* curWorkbook;
+	unsigned int curWorkbookIndex;
+	xlnt::worksheet* curWorksheet;
+	
+	//每次开始读取某一工作表前，重新设定行数
 	unsigned int curRow;
 	unsigned int maxRow;
 
-	std::vector<std::string> fileNames;
 
 	std::vector<std::pair<std::string, xlnt::cell_vector>> selColumns;	//已选择的列，需要指定列名
+	
+	std::vector<std::string> fileNames;
+	std::vector<std::pair<std::string, std::vector<xlnt::workbook>>> loadedWorkbook;	 //已加载的工作簿
 	
 };
 

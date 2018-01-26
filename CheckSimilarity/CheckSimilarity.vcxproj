@@ -182,7 +182,6 @@
     <ClInclude Include="ExcelReader.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="CheckSimilarity.h" />
-    <ClInclude Include="resource1.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
