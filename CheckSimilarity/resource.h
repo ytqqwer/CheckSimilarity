@@ -41,8 +41,6 @@
 #define ID_PART_OF_SPEECH_COMBOBOX      1002
 #define ID_SEARCH_BUTTON                1003
 
-#define ID_DETAIL_OK                    1021
-
 #define ID_DICTIONARY_ONE_LISTVIEW      1500
 #define ID_DICTIONARY_TWO_LISTVIEW      1511
 
@@ -61,18 +59,8 @@
 #define ID_COLUMN_XH_MEANINGS			2105
 #define ID_COLUMN_XH_EXAMPLE			2106
 
-#define ID_TEXT_SIMILARITY              3000
-#define ID_TEXT_RELATIONSHIP            3001
-#define ID_TEXT_NEW_RELATIONSHIP        3002
-#define ID_TEXT_STATIC_SIMILARITY       3003
-#define ID_TEXT_STATIC_RELATIONSHIP     3004
-#define ID_TEXT_STATIC_NEW_RELATIONSHIP 3005
+#define ID_COLUMN_SIMILARITY			2107
 
-#define ID_EQUAL_BUTTON                 3050
-#define ID_NOT_EQUAL_BUTTON             3051
-#define ID_UNSURE_BUTTON                3052
-#define ID_BELONG_BUTTON                3053
-#define ID_MORE_DETAIL_BUTTON           3054
 #define ID_NEXT_WORD_BUTTON             3055
 #define ID_NEXT_SENSE_BUTTON            3056
 #define ID_CHECK_BUTTON					3057

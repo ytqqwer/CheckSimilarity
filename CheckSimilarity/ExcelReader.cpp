@@ -91,47 +91,62 @@ void ExcelReader::setPartOfSpeech(const std::string & str)
 {
 	curPartOfSpeech = str;
 
-	changeWorkbook();
-
+	changeWorkbook(0);
 }
 
-void ExcelReader::changeWorkbook()
-{
-	//默认选取std::vector<xlnt::workbook>中的第一个，如果有的话
-	
+//默认选取std::vector<xlnt::workbook>中的第一个，如果有的话
+bool ExcelReader::changeWorkbook(unsigned int index)
+{	
 	for (auto& pair : loadedWorkbook) {
 		if (pair.first == curPartOfSpeech) {
 			
-			curWorkbook = &pair.second[0];
-			curWorksheet = &curWorkbook->active_sheet();
-
+			xlnt::worksheet curWorksheet = pair.second[index].active_sheet();
 
 			///////////////////////////////////////////////////////
 			//重置
 			selColumns.clear();
 			curRow = 1;
-			curWorkbookIndex = 0;
+			curWorkbookIndex = index;
 
 			//统计总行数
 			//最大行数减一，去掉列名
-			auto rows = curWorksheet->rows(false);
+			auto rows = curWorksheet.rows(false);
 			maxRow = rows.length() - 1;
 
-
-			return ;
+			if (maxRow < curRow)
+			{
+				return false; //说明当前工作簿只有一行列名，返回false
+			}
+			else
+				return true;
 		}
 	}
 
-
-
+	return false;//什么也没找到
 }
 
 bool ExcelReader::nextWorkbook()
 {
-	//
+	for (auto& pair : loadedWorkbook) {
+		if (pair.first == curPartOfSpeech) {
+			unsigned int totalWorkbook = pair.second.size();
 
+			if (curWorkbookIndex < totalWorkbook - 1) {	//减1，防止索引越界
+				curWorkbookIndex++;
 
-	return false;
+				if (changeWorkbook(curWorkbookIndex)) {
+					return true;
+				}
+				else {
+					return nextWorkbook();
+				}
+			}
+			else 
+				return false;//已没有下一个工作簿
+		}
+	}
+
+	return false;//什么也没找到
 }
 
 bool ExcelReader::isExistingFile()
@@ -142,57 +157,48 @@ bool ExcelReader::isExistingFile()
 // 如果已达到最后一行，则返回false
 bool ExcelReader::nextWord()
 {
-
-
-
-	/////////////////////////////////////////////////
-	//TODO 切换到下一个工作簿
-
-
-
-
-
-
-	//最大行数减一，去掉列名
-
-
 	if (curRow < maxRow) {
 		curRow++;
 		return true;
 	}
 	else
-		return false;
+		return nextWorkbook();// 切换到下一个工作簿
+	
 }
 
 void ExcelReader::selectColumn(const std::string & columnName)
 {
+	for (auto& pair : loadedWorkbook) {
+		if (pair.first == curPartOfSpeech) {
 
+			xlnt::worksheet curWorksheet = pair.second[curWorkbookIndex].active_sheet();
 
+			auto columns = curWorksheet.columns(false);
+			for (auto& column : columns) {
+				std::string str = column[0].to_string();
 
+				//使用xLnt读取xlsx文件，返回值均为utf-8编码
+				//故str中实际存储的是utf-8编码的字符串
 
-	//auto columns = ws.columns(false);
-	//for (auto& column : columns) {
-	//	std::string str = column[0].to_string();
+				if (columnName == str) {
+					selColumns.push_back(make_pair(columnName, column));
+					return;
+				}
 
-	//	//使用xLnt读取xlsx文件，返回值均为utf-8编码
-	//	//故str中实际存储的是utf-8编码的字符串
+			}
 
-	//	if (columnName == str) {
-	//		selColumns.push_back(make_pair(columnName, column));
-	//		return;
-	//	}
-
-	//}
+		}
+	}
 
 }
 
 std::string ExcelReader::getCurCellValueInColumn(const std::string & columnName)
 {
-	//for (auto& pair : selColumns) {
-	//	if (pair.first == columnName) {
-	//		return pair.second[curRow].to_string();
-	//	}
-	//}
+	for (auto& pair : selColumns) {
+		if (pair.first == columnName) {
+			return pair.second[curRow].to_string();
+		}
+	}
 
 	return std::string("none");
 }

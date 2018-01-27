@@ -16,7 +16,7 @@ public:
 
 	void setPartOfSpeech(const std::string&);
 
-	void changeWorkbook();
+	bool changeWorkbook(unsigned int index = 0);
 	bool nextWorkbook();
 
 	bool nextWord();	// 如果已达到最后一行，则返回false	
@@ -32,9 +32,7 @@ private:
 
 	std::string curPartOfSpeech;
 
-	xlnt::workbook* curWorkbook;
 	unsigned int curWorkbookIndex;
-	xlnt::worksheet* curWorksheet;
 	
 	//每次开始读取某一工作表前，重新设定行数
 	unsigned int curRow;
