@@ -255,9 +255,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//////////////////////////////////////////////////////////////////////
 	//初始化文本	
-	HWND hWordText= CreateWindow(_T("static"), _T("词语"), WS_CHILD | WS_VISIBLE | SS_LEFT, 30, 30, 30, 30, hWnd,
+	HWND hWordText = CreateWindow(_T("static"), _T("词语"), WS_CHILD | WS_VISIBLE | SS_LEFT, 30, 30, 30, 30, hWnd,
 		NULL, hInst, NULL);
-	
+
 	HWND hPosText = CreateWindow(_T("static"), _T("选择词类"), WS_CHILD | WS_VISIBLE | SS_LEFT, 500, 30, 80, 30, hWnd,
 		NULL, hInst, NULL);
 
@@ -366,7 +366,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//////////////////////////////////////////////////////////////////////
 	// 禁用某些按钮，直到被激活
-	
+
 	return TRUE;
 }
 
@@ -404,7 +404,6 @@ void selectColumns()
 	reader->selectColumn(u8"gkb_释义");
 	reader->selectColumn(u8"gkb_例句");
 
-
 	reader->selectColumn(u8"ID");
 	reader->selectColumn(u8"词语");
 	reader->selectColumn(u8"义项编码");
@@ -428,13 +427,15 @@ void resetPartOfSpeech()
 	TCHAR  part_of_speech[256];
 	(TCHAR)SendMessage(hPartOfSpeechComboBox, (UINT)CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)part_of_speech);
 
-	reader->setPartOfSpeech(WTS_U8(part_of_speech));
+	if (reader->setPartOfSpeech(WTS_U8(part_of_speech))) {
+		// 选择列，因为更换词类后，选择的列已被清空
+		selectColumns();
 
-	// 选择列，因为更换词类后，选择的列已被清空
-	selectColumns();
+	}
+
 }
 
-void setListViewItem(LVITEM& vitem,int iItem,int iSubItem ,HWND hWnd,const std::string& data )
+void setListViewItem(LVITEM& vitem, int iItem, int iSubItem, HWND hWnd, const std::string& data)
 {
 	std::wstring str = stringToWstring(reader->getCurCellValueInColumn(data));
 	vitem.iItem = iItem;
@@ -443,9 +444,6 @@ void setListViewItem(LVITEM& vitem,int iItem,int iSubItem ,HWND hWnd,const std::
 
 	ListView_InsertItem(hWnd, &vitem);
 }
-
-
-
 
 void refreshListView()
 {
@@ -470,7 +468,7 @@ void refreshListView()
 	vitem.iSubItem = 0;
 	vitem.pszText = (LPWSTR)str.c_str();
 	ListView_InsertItem(hDictionaryListView_GKB, &vitem);
-	
+
 	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_词类"));
 	vitem.iSubItem = 1;
 	vitem.pszText = (LPWSTR)str.c_str();
@@ -485,7 +483,7 @@ void refreshListView()
 	vitem.iSubItem = 3;
 	vitem.pszText = (LPWSTR)str.c_str();
 	ListView_SetItem(hDictionaryListView_GKB, &vitem);
-	
+
 	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_释义"));
 	vitem.iSubItem = 4;
 	vitem.pszText = (LPWSTR)str.c_str();
@@ -541,7 +539,7 @@ void refreshListView()
 	vitem.iSubItem = 6;
 	vitem.pszText = (LPWSTR)str.c_str();
 	ListView_SetItem(hDictionaryListView_XH, &vitem);
-	
+
 	//setListViewItem(vitem,0, 0, hDictionaryListView_XH, u8"ID");
 	//setListViewItem(vitem,0, 1, hDictionaryListView_XH, u8"词语");
 	//setListViewItem(vitem,0, 2, hDictionaryListView_XH, u8"义项编码");
@@ -549,7 +547,7 @@ void refreshListView()
 	//setListViewItem(vitem,0, 4, hDictionaryListView_XH, u8"词性");
 	//setListViewItem(vitem,0, 5, hDictionaryListView_XH, u8"义项释义");
 	//setListViewItem(vitem,0, 6, hDictionaryListView_XH, u8"示例");
-		
+
 }
 
 
@@ -557,7 +555,7 @@ void refreshMainWindow()
 {
 
 	refreshListView();
-	
+
 	//////////////////////////////////////////////////////////////////////
 	//TODO 设置搜索框中的文本
 
@@ -570,14 +568,12 @@ void refreshMainWindow()
 }
 
 
-
 // 激活某些控件
 void activeControls()
 {
 	//TODO
-	
-}
 
+}
 
 //
 //  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -620,7 +616,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				resetPartOfSpeech();
 				refreshMainWindow();
 			}
-			
+
 		}
 		break;
 		default:
@@ -635,9 +631,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 
 			MessageBox(hWnd, L"您点击了一个按钮。", L"提示", MB_OK);
-			
+
 		}
-			break;
+		break;
 		case ID_CHECK_BUTTON:
 			MessageBox(hWnd, L"点了个按钮。", L"提示", MB_OK);
 			break;
@@ -651,7 +647,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					MessageBox(hWnd, L"已是最后一个词语。", L"提示", MB_OK);
 			}
 		}
-			break;
+		break;
 		case IDM_ABOUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
@@ -687,7 +683,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				////////////////////////////////////////////////////////////////////
 				//搜索目录下的xlsx文件
-				std::string searchPath = tempPathName ;
+				std::string searchPath = tempPathName;
 				searchPath = searchPath + "\\*.xlsx";
 				_finddata_t fileDir;
 				long lfDir;
@@ -702,10 +698,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						int iLength;
 						iLength = MultiByteToWideChar(CP_ACP, 0, fileDir.name, strlen(fileDir.name) + 1, NULL, 0);
 						MultiByteToWideChar(CP_ACP, 0, fileDir.name, strlen(fileDir.name) + 1, temp1, iLength);
-						
+
 						std::wstring wtemp1(temp1);
 						std::string utf8_str = WTS_U8(wtemp1);
-						
+
 						reader->addXlsxFileName(utf8_str);
 
 					} while (_findnext(lfDir, &fileDir) == 0);
@@ -726,7 +722,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				pattern_part.push_back(pattern_mto1);
 				pattern_part.push_back(pattern_mtom);
 
-				std::wstring wpath = szPathName;		
+				std::wstring wpath = szPathName;
 				wpath = wpath + L"\\";
 
 				for (auto& part : pattern_part) {

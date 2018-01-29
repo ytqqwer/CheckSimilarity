@@ -14,8 +14,9 @@ public:
 	
 	void loadXlsxFile(const std::string& pattern, const std::string& partOfSpeech, const std::string& path);
 
-	void setPartOfSpeech(const std::string&);
+	bool setPartOfSpeech(const std::string&);
 
+	bool skipEmptyWorkbook();
 	bool changeWorkbook(unsigned int index = 0);
 	bool nextWorkbook();
 

@@ -38,7 +38,7 @@ void ExcelReader::clear()
 	////最大行数减一，去掉列名
 	//auto rows = ws.rows(false);
 	//maxRow = rows.length() - 1;
-	
+
 
 	//maxRow = curRow = 1;
 	//selColumns.clear();
@@ -63,11 +63,11 @@ void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & 
 			existingFile = true;	//设定已经加载文件
 
 			std::string fullPath = path + name;
-			
+
 			for (auto& pair : loadedWorkbook) {
 				if (pair.first == partOfSpeech) {
 					xlnt::workbook workbook;
-					
+
 					workbook.load(fullPath);
 					pair.second.push_back(workbook);
 					return;
@@ -87,26 +87,64 @@ void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & 
 	}
 }
 
-void ExcelReader::setPartOfSpeech(const std::string & str)
+bool ExcelReader::setPartOfSpeech(const std::string & str)
 {
 	curPartOfSpeech = str;
 
-	changeWorkbook(0);
+	////////////////////////////////////////////////////////////////
+	//重新选择工作簿，并且跳过空表
+	selColumns.clear();
+	curRow = 1;
+	curWorkbookIndex = 0;
+
+	return skipEmptyWorkbook();	
 }
+
+
+bool ExcelReader::skipEmptyWorkbook()
+{
+	for (auto& pair : loadedWorkbook) {
+		if (pair.first == curPartOfSpeech) {
+			unsigned int totalWorkbook = pair.second.size();
+			
+			if (curWorkbookIndex < totalWorkbook ) {
+				
+				xlnt::worksheet curWorksheet = pair.second[curWorkbookIndex].active_sheet();
+
+				//最大行数减一，去掉列名
+				auto rows = curWorksheet.rows(false);
+				auto max_row = rows.length() - 1;
+
+				if (max_row < curRow)
+				{
+					curWorkbookIndex++;
+					return skipEmptyWorkbook(); //说明当前工作簿只有一行列名
+				}
+				else
+					return true;
+
+			}
+			else
+				return false;//已没有下一个工作簿
+		}
+	}
+
+	return false;
+}
+
 
 //默认选取std::vector<xlnt::workbook>中的第一个，如果有的话
 bool ExcelReader::changeWorkbook(unsigned int index)
-{	
+{
+	//重置
+	selColumns.clear();
+	curRow = 1;
+	curWorkbookIndex = index;
+
 	for (auto& pair : loadedWorkbook) {
 		if (pair.first == curPartOfSpeech) {
-			
-			xlnt::worksheet curWorksheet = pair.second[index].active_sheet();
 
-			///////////////////////////////////////////////////////
-			//重置
-			selColumns.clear();
-			curRow = 1;
-			curWorkbookIndex = index;
+			xlnt::worksheet curWorksheet = pair.second[index].active_sheet();
 
 			//统计总行数
 			//最大行数减一，去掉列名
@@ -141,17 +179,12 @@ bool ExcelReader::nextWorkbook()
 					return nextWorkbook();
 				}
 			}
-			else 
+			else
 				return false;//已没有下一个工作簿
 		}
 	}
 
 	return false;//什么也没找到
-}
-
-bool ExcelReader::isExistingFile()
-{
-	return existingFile;
 }
 
 // 如果已达到最后一行，则返回false
@@ -163,7 +196,12 @@ bool ExcelReader::nextWord()
 	}
 	else
 		return nextWorkbook();// 切换到下一个工作簿
-	
+
+}
+
+bool ExcelReader::isExistingFile()
+{
+	return existingFile;
 }
 
 void ExcelReader::selectColumn(const std::string & columnName)
