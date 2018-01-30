@@ -2,11 +2,13 @@
 #include "ExcelReader.h"
 #include <codecvt>
 
-#include <regex>							//正则表达式
+#include <regex>	//正则表达式
+
+#include <set>						
 
 ExcelReader::ExcelReader()
 {
-	maxRow = curRow = 1;
+	maxRow = curRow = curRowRangeBegin = curRowRangeEnd = 1;
 	curWorkbookIndex = 0;
 	existingFile = false;
 }
@@ -22,36 +24,12 @@ void ExcelReader::addXlsxFileName(const std::string & filename)
 
 void ExcelReader::clear()
 {
-	//if (isOpen) {
-		////重置状态
-		//curRow = 1;
-		//selColumns.clear();
-		//fileNames.clear();
-		//isOpen = false;
-	//}
-
-	//wb = new xlnt::workbook();
-	//wb->load(filename);
-	//ws = wb->active_sheet();
-
-	////统计总行数
-	////最大行数减一，去掉列名
-	//auto rows = ws.rows(false);
-	//maxRow = rows.length() - 1;
-
-
-	//maxRow = curRow = 1;
-	//selColumns.clear();
-
 	existingFile = false;;
-
 
 	fileNames.clear();
 	loadedWorkbook.clear();
 
-
 }
-
 
 void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & partOfSpeech, const std::string& path)
 {
@@ -82,7 +60,6 @@ void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & 
 			loadedWorkbook.push_back(make_pair(partOfSpeech, wbs));
 
 			break;
-
 		}
 	}
 }
@@ -91,15 +68,16 @@ bool ExcelReader::setPartOfSpeech(const std::string & str)
 {
 	curPartOfSpeech = str;
 
-	////////////////////////////////////////////////////////////////
 	//重新选择工作簿，并且跳过空表
 	selColumns.clear();
+	selRows.clear();
 	curRow = 1;
+	curRowRangeBegin = 1;
+	curRowRangeEnd = 1;
 	curWorkbookIndex = 0;
 
 	return skipEmptyWorkbook();	
 }
-
 
 bool ExcelReader::skipEmptyWorkbook()
 {
@@ -113,32 +91,36 @@ bool ExcelReader::skipEmptyWorkbook()
 
 				//最大行数减一，去掉列名
 				auto rows = curWorksheet.rows(false);
-				auto max_row = rows.length() - 1;
+				maxRow = rows.length() - 1;
 
-				if (max_row < curRow)
+				if (maxRow < curRow)
 				{
 					curWorkbookIndex++;
-					return skipEmptyWorkbook(); //说明当前工作簿只有一行列名
+					return skipEmptyWorkbook();
 				}
 				else
+				{
+					//不需要再跳过，重新选择列
+					selectColumn();
 					return true;
-
+				}
 			}
 			else
-				return false;//已没有下一个工作簿
+				return false;
 		}
 	}
 
 	return false;
 }
 
-
 //默认选取std::vector<xlnt::workbook>中的第一个，如果有的话
 bool ExcelReader::changeWorkbook(unsigned int index)
 {
 	//重置
 	selColumns.clear();
+	selRows.clear();
 	curRow = 1;
+	curRowRangeEnd = 1;
 	curWorkbookIndex = index;
 
 	for (auto& pair : loadedWorkbook) {
@@ -146,8 +128,7 @@ bool ExcelReader::changeWorkbook(unsigned int index)
 
 			xlnt::worksheet curWorksheet = pair.second[index].active_sheet();
 
-			//统计总行数
-			//最大行数减一，去掉列名
+			//统计总行数，最大行数减一，去掉列名
 			auto rows = curWorksheet.rows(false);
 			maxRow = rows.length() - 1;
 
@@ -156,7 +137,10 @@ bool ExcelReader::changeWorkbook(unsigned int index)
 				return false; //说明当前工作簿只有一行列名，返回false
 			}
 			else
+			{
+				selectColumn();
 				return true;
+			}
 		}
 	}
 
@@ -169,7 +153,7 @@ bool ExcelReader::nextWorkbook()
 		if (pair.first == curPartOfSpeech) {
 			unsigned int totalWorkbook = pair.second.size();
 
-			if (curWorkbookIndex < totalWorkbook - 1) {	//减1，防止索引越界
+			if (curWorkbookIndex + 1 < totalWorkbook) {	//减1，防止索引越界
 				curWorkbookIndex++;
 
 				if (changeWorkbook(curWorkbookIndex)) {
@@ -187,11 +171,58 @@ bool ExcelReader::nextWorkbook()
 	return false;//什么也没找到
 }
 
+//搜索词语同形的对应关系
+void ExcelReader::selectIsomorphicWordGroup()
+{
+	bool isOver = false;
+	curRowRangeBegin = curRowRangeEnd = curRow;	
+	curWord = getCurCellValueInColumn(u8"gkb_词语");
+
+	std::set<std::string> setOfIsomorphic;
+
+	//获得词语的范围与同形数量
+	while (!isOver) {
+		std::string& word = getCurCellValueInColumn(u8"gkb_词语");
+		if (curWord == word) 
+		{
+			setOfIsomorphic.insert(getCurCellValueInColumn(u8"gkb_同形"));
+			curRow++;
+			curRowRangeEnd++;
+		}
+		else 
+		{
+			isOver = true;
+		}
+	}
+	
+	//寻找同形所在行
+	unsigned int row_of_isomorphic = 1;			//某一同形对应的词语所在行数，不一定是首个对应词语
+	std::vector<unsigned int> matchedRows;	//匹配上的行
+	for (auto& isomorphic : setOfIsomorphic) {
+		for (curRow = curRowRangeBegin; curRow < curRowRangeEnd; curRow++)
+		{			
+			if (isomorphic == getCurCellValueInColumn(u8"gkb_同形")) {
+				row_of_isomorphic = curRow;
+				matchedRows.push_back(curRow);
+			}
+		}
+		selRows.push_back(make_pair(row_of_isomorphic, matchedRows));
+		matchedRows.clear();
+	}
+	
+	numberOfIsomorphic = sizeOfSelectedRows();
+	curIsomorphicIndex = 0;
+}
+
 // 如果已达到最后一行，则返回false
 bool ExcelReader::nextWord()
 {
-	if (curRow < maxRow) {
-		curRow++;
+	selRows.clear();
+
+	if (curRowRangeEnd < maxRow) {
+		
+		selectIsomorphicWordGroup();
+		
 		return true;
 	}
 	else
@@ -204,27 +235,26 @@ bool ExcelReader::isExistingFile()
 	return existingFile;
 }
 
-void ExcelReader::selectColumn(const std::string & columnName)
+void ExcelReader::selectColumn()
 {
-	for (auto& pair : loadedWorkbook) {
-		if (pair.first == curPartOfSpeech) {
+	for (auto& columnName : columnNames) {
+		for (auto& pair : loadedWorkbook) {
+			if (pair.first == curPartOfSpeech) {
 
-			xlnt::worksheet curWorksheet = pair.second[curWorkbookIndex].active_sheet();
+				xlnt::worksheet curWorksheet = pair.second[curWorkbookIndex].active_sheet();
 
-			auto columns = curWorksheet.columns(false);
-			for (auto& column : columns) {
-				std::string str = column[0].to_string();
+				auto columns = curWorksheet.columns(false);
+				for (auto& column : columns) {
+					std::string str = column[0].to_string();
 
-				//使用xLnt读取xlsx文件，返回值均为utf-8编码
-				//故str中实际存储的是utf-8编码的字符串
-
-				if (columnName == str) {
-					selColumns.push_back(make_pair(columnName, column));
-					return;
+					//使用xLnt读取xlsx文件，返回值均为utf-8编码
+					//故str中实际存储的是utf-8编码的字符串
+					if (columnName == str) {
+						selColumns.push_back(make_pair(columnName, column));
+						break;
+					}
 				}
-
 			}
-
 		}
 	}
 
@@ -241,5 +271,42 @@ std::string ExcelReader::getCurCellValueInColumn(const std::string & columnName)
 	return std::string("none");
 }
 
+void ExcelReader::setIsomorphicColumnName(const std::string & columnName)
+{
+	isomorphicColumnName = columnName;
+}
 
+unsigned int ExcelReader::sizeOfSelectedRows()
+{
+	return selRows.size();
+}
 
+std::pair<unsigned int, std::vector<unsigned int>> ExcelReader::getRowByIndex(unsigned int index)
+{
+	unsigned int i = 0;
+	for (auto& pair : selRows) {
+		if (i == index) {
+			return pair;
+		}
+		else
+			i++;
+	}
+
+	return std::pair<unsigned int, std::vector<unsigned int>>();
+}
+
+std::string ExcelReader::getValueInColumnByRow(unsigned int row, const std::string & columnName)
+{
+	for (auto& pair : selColumns) {
+		if (pair.first == columnName) {
+			return pair.second[row].to_string();
+		}
+	}
+
+	return std::string("none");
+}
+
+void ExcelReader::setColumnNames(const std::vector<std::string>& names)
+{
+	columnNames = names;
+}

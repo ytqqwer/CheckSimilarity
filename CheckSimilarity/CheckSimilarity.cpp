@@ -355,10 +355,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//////////////////////////////////////////////////////////////////////
 	//“下一”按钮
-	hNextSenseButton = CreateWindow(_T("BUTTON"), _T("下一词义"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		200, 350, 100, 30, hWnd, (HMENU)ID_NEXT_SENSE_BUTTON, hInst, NULL);
-
-	hNextWordButton = CreateWindow(_T("BUTTON"), _T("下一词语"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+	hNextWordButton = CreateWindow(_T("BUTTON"), _T("下一个"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
 		350, 350, 100, 30, hWnd, (HMENU)ID_NEXT_WORD_BUTTON, hInst, NULL);
 
 	ShowWindow(hWnd, nCmdShow);
@@ -369,7 +366,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	return TRUE;
 }
-
 
 // 搜索编辑框 的消息处理函数
 LRESULT CALLBACK subEditSearchProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -393,29 +389,6 @@ LRESULT CALLBACK subEditSearchProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 	return 0;
 }
 
-
-void selectColumns()
-{
-
-	reader->selectColumn(u8"gkb_词语");
-	reader->selectColumn(u8"gkb_词类");
-	reader->selectColumn(u8"gkb_拼音");
-	reader->selectColumn(u8"gkb_同形");
-	reader->selectColumn(u8"gkb_释义");
-	reader->selectColumn(u8"gkb_例句");
-
-	reader->selectColumn(u8"ID");
-	reader->selectColumn(u8"词语");
-	reader->selectColumn(u8"义项编码");
-	reader->selectColumn(u8"拼音");
-	reader->selectColumn(u8"词性");
-	reader->selectColumn(u8"义项释义");
-	reader->selectColumn(u8"示例");
-
-	reader->selectColumn(u8"相似度");
-}
-
-
 void resetPartOfSpeech()
 {
 	// If the user makes a selection from the list:
@@ -428,21 +401,14 @@ void resetPartOfSpeech()
 	(TCHAR)SendMessage(hPartOfSpeechComboBox, (UINT)CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)part_of_speech);
 
 	if (reader->setPartOfSpeech(WTS_U8(part_of_speech))) {
-		// 选择列，因为更换词类后，选择的列已被清空
-		selectColumns();
-
+		//选择词组
+		reader->selectIsomorphicWordGroup();
 	}
 
-}
+	//重置和行有关的外部全局变量
+	//numberOfIsomorphic = reader->sizeOfSelectedRows();
+	//curIsomorphicIndex = 0;
 
-void setListViewItem(LVITEM& vitem, int iItem, int iSubItem, HWND hWnd, const std::string& data)
-{
-	std::wstring str = stringToWstring(reader->getCurCellValueInColumn(data));
-	vitem.iItem = iItem;
-	vitem.iSubItem = iSubItem;
-	vitem.pszText = (LPWSTR)str.c_str();
-
-	ListView_InsertItem(hWnd, &vitem);
 }
 
 void refreshListView()
@@ -451,109 +417,101 @@ void refreshListView()
 	ListView_DeleteAllItems(hDictionaryListView_GKB);
 	ListView_DeleteAllItems(hDictionaryListView_XH);
 
-	//LVITEM vitem;
-	//vitem.mask = LVIF_TEXT;
+	std::pair<unsigned int, std::vector<unsigned int>> neededRows = reader->getRowByIndex(reader->curIsomorphicIndex);
 
-	/*	先添加项再设置子项内容	*/
-
-	//////////////////////////////////////////////////////////////////////
-	//词典1
-	//临时变量str保存返回的宽字符字符串	
 	LVITEM vitem;
 	vitem.mask = LVIF_TEXT;
 	vitem.iItem = 0;
-	std::wstring str;
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_词语"));
-	vitem.iSubItem = 0;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_InsertItem(hDictionaryListView_GKB, &vitem);
-
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_词类"));
-	vitem.iSubItem = 1;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_GKB, &vitem);
-
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_拼音"));
-	vitem.iSubItem = 2;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_GKB, &vitem);
-
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_同形"));
-	vitem.iSubItem = 3;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_GKB, &vitem);
-
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_释义"));
-	vitem.iSubItem = 4;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_GKB, &vitem);
-
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"gkb_例句"));
-	vitem.iSubItem = 5;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_GKB, &vitem);
-
-	//setListViewItem(vitem,0, 0, hDictionaryListView_GKB, u8"gkb_词语");
-	//setListViewItem(vitem,0, 1, hDictionaryListView_GKB, u8"gkb_词类");
-	//setListViewItem(vitem,0, 2, hDictionaryListView_GKB, u8"gkb_拼音");
-	//setListViewItem(vitem,0, 3, hDictionaryListView_GKB, u8"gkb_同形");
-	//setListViewItem(vitem,0, 4, hDictionaryListView_GKB, u8"gkb_释义");
-	//setListViewItem(vitem,0, 5, hDictionaryListView_GKB, u8"gkb_例句");
-
+	std::wstring str;//临时变量str保存返回的宽字符字符串	
 	//////////////////////////////////////////////////////////////////////
-	//词典2
-	//vitem.iItem = 0;
-
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"ID"));
+	//词典1	
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, u8"gkb_词语"));
 	vitem.iSubItem = 0;
 	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_InsertItem(hDictionaryListView_XH, &vitem);
+	ListView_InsertItem(hDictionaryListView_GKB, &vitem);//区别insert和set
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"词语"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, u8"gkb_词类"));
 	vitem.iSubItem = 1;
 	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_InsertItem(hDictionaryListView_XH, &vitem);
+	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"义项编码"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, u8"gkb_拼音"));
 	vitem.iSubItem = 2;
 	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_XH, &vitem);
+	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"拼音"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, u8"gkb_同形"));
 	vitem.iSubItem = 3;
 	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_XH, &vitem);
+	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"词性"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, "gkb_释义"));
 	vitem.iSubItem = 4;
 	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_XH, &vitem);
+	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"义项释义"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, "gkb_例句"));
 	vitem.iSubItem = 5;
 	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_XH, &vitem);
+	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getCurCellValueInColumn(u8"示例"));
-	vitem.iSubItem = 6;
-	vitem.pszText = (LPWSTR)str.c_str();
-	ListView_SetItem(hDictionaryListView_XH, &vitem);
+	////////////////////////////////////////////////////////////////////////
+	////词典2
+	unsigned int size = neededRows.second.size();
 
-	//setListViewItem(vitem,0, 0, hDictionaryListView_XH, u8"ID");
-	//setListViewItem(vitem,0, 1, hDictionaryListView_XH, u8"词语");
-	//setListViewItem(vitem,0, 2, hDictionaryListView_XH, u8"义项编码");
-	//setListViewItem(vitem,0, 3, hDictionaryListView_XH, u8"拼音");
-	//setListViewItem(vitem,0, 4, hDictionaryListView_XH, u8"词性");
-	//setListViewItem(vitem,0, 5, hDictionaryListView_XH, u8"义项释义");
-	//setListViewItem(vitem,0, 6, hDictionaryListView_XH, u8"示例");
+	for (unsigned int i = 0; i < size; i++)
+	{
+		unsigned int row = neededRows.second[i];
+
+		vitem.iItem = i;
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"ID"));
+		vitem.iSubItem = 0;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_InsertItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"词语"));
+		vitem.iSubItem = 1;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"义项编码"));
+		vitem.iSubItem = 2;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"拼音"));
+		vitem.iSubItem = 3;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"词性"));
+		vitem.iSubItem = 4;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"义项释义"));
+		vitem.iSubItem = 5;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"示例"));
+		vitem.iSubItem = 6;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+
+		str = stringToWstring(reader->getValueInColumnByRow(row, u8"相似度"));
+		vitem.iSubItem = 7;
+		vitem.pszText = (LPWSTR)str.c_str();
+		ListView_SetItem(hDictionaryListView_XH, &vitem);
+	}
 
 }
 
 
 void refreshMainWindow()
 {
-
 	refreshListView();
 
 	//////////////////////////////////////////////////////////////////////
@@ -561,9 +519,6 @@ void refreshMainWindow()
 
 	//str = stringToWstring(reader->getCurCellValueInColumn(u8"相似度"));
 	//SetWindowText(hSimilarityText, (LPWSTR)str.c_str());		// 相似度
-
-	//str = stringToWstring(reader->getCurCellValueInColumn(u8"映射关系"));
-	//SetWindowText(hRelationshipText, (LPWSTR)str.c_str());		// 对应关系
 
 }
 
@@ -640,12 +595,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_NEXT_WORD_BUTTON:
 		{
 			if (reader->isExistingFile()) {
-				if (reader->nextWord()) {
+
+				if (reader->curIsomorphicIndex + 1 < reader->numberOfIsomorphic) {
+
+					reader->curIsomorphicIndex++;
+
+					refreshMainWindow();
+				}
+				else if (reader->nextWord()) {
+					reader->curIsomorphicIndex = 0;
+
 					refreshMainWindow();
 				}
 				else
 					MessageBox(hWnd, L"已是最后一个词语。", L"提示", MB_OK);
+
 			}
+
+
 		}
 		break;
 		case IDM_ABOUT:
@@ -742,18 +709,36 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					reader->loadXlsxFile(WTS_U8(part + L"缀" + pattern_end), WTS_U8(PART_OF_SPEECH_ZHUI), WTS_U8(wpath));
 				}
 
+
 				////////////////////////////////////////////////////////////////////
 				// 打开文件后默认显示当前词类选择列表中指定的表格，刷新主窗口
 				// 这样当未打开文件时，也可以随便选择词类，但是不会产生效果
 				resetPartOfSpeech();
 
+				std::vector<std::string> columnNames{
+					u8"gkb_词语",
+					u8"gkb_词类",
+					u8"gkb_拼音",
+					u8"gkb_同形",
+					u8"gkb_释义",
+					u8"gkb_例句",
+					u8"ID",
+					u8"词语",
+					u8"义项编码",
+					u8"拼音",
+					u8"词性",
+					u8"义项释义",
+					u8"示例",
+					u8"相似度"
+				};
+				//设置列，选择的列已被清空
+				reader->setColumnNames(columnNames);
+
 				//////////////////////////////////////////////////////////////////////
 				//TODO 激活某些控件
 				activeControls();
 
-
 				refreshMainWindow();
-
 			}
 
 		}
