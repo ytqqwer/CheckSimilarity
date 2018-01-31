@@ -102,6 +102,8 @@ bool ExcelReader::skipEmptyWorkbook()
 				{
 					//不需要再跳过，重新选择列
 					selectColumn();
+					//重新选择词组
+					selectIsomorphicWordGroup();
 					return true;
 				}
 			}
@@ -139,6 +141,8 @@ bool ExcelReader::changeWorkbook(unsigned int index)
 			else
 			{
 				selectColumn();
+				//重新选择词组
+				selectIsomorphicWordGroup();
 				return true;
 			}
 		}
@@ -219,7 +223,7 @@ bool ExcelReader::nextWord()
 {
 	selRows.clear();
 
-	if (curRowRangeEnd < maxRow) {
+	if (curRowRangeEnd <= maxRow) {
 		
 		selectIsomorphicWordGroup();
 		

@@ -270,7 +270,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	{
 		//////////////////////////////////////////////////////////////////////
 		//初始化GKB词典的列表视图
-		hDictionaryListView_GKB = CreateWindow(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
+		hDictionaryListView_GKB = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
 			30, 70, 740, 55, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
 
 		WCHAR szText[256];     // Temporary buffer.
@@ -311,7 +311,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 		//////////////////////////////////////////////////////////////////////
 		//初始化XH词典的列表视图
-		hDictionaryListView_XH = CreateWindow(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
+		hDictionaryListView_XH = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
 			30, 150, 740, 180, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
 
 		// Add the columns.
@@ -322,21 +322,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 			lvc.fmt = LVCFMT_LEFT;		// Left-aligned column.
 
 			if (iCol < 1)				// Width of column in pixels.
-				lvc.cx = 50;			//ID
+				lvc.cx = 70;			//ID
 			else if (iCol < 2)
-				lvc.cx = 60;			//词语
+				lvc.cx = 70;			//词语
 			else if (iCol < 3)
 				lvc.cx = 70;			//义项编码
 			else if (iCol < 4)
 				lvc.cx = 70;			//拼音
 			else if (iCol < 5)
-				lvc.cx = 50;			//词性
+				lvc.cx = 40;			//词性
 			else if (iCol < 6)
-				lvc.cx = 200;			//义项释义
+				lvc.cx = 180;			//义项释义
 			else if (iCol < 7)
-				lvc.cx = 200;			//示例
+				lvc.cx = 180;			//示例
 			else
-				lvc.cx = 40;			//相似度
+				lvc.cx = 50;			//相似度
 
 			// Load the names of the column headings from the string resources.
 			LoadString(hInst, ID_COLUMN_XH_ID + iCol, szText, sizeof(szText) / sizeof(szText[0]));
@@ -400,15 +400,11 @@ void resetPartOfSpeech()
 	TCHAR  part_of_speech[256];
 	(TCHAR)SendMessage(hPartOfSpeechComboBox, (UINT)CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)part_of_speech);
 
-	if (reader->setPartOfSpeech(WTS_U8(part_of_speech))) {
-		//选择词组
-		reader->selectIsomorphicWordGroup();
-	}
-
-	//重置和行有关的外部全局变量
-	//numberOfIsomorphic = reader->sizeOfSelectedRows();
-	//curIsomorphicIndex = 0;
-
+	//if (reader->setPartOfSpeech(WTS_U8(part_of_speech))) {
+	//	//选择词组
+	//	/*reader->selectIsomorphicWordGroup();*/
+	//}
+	reader->setPartOfSpeech(WTS_U8(part_of_speech));
 }
 
 void refreshListView()
@@ -446,12 +442,12 @@ void refreshListView()
 	vitem.pszText = (LPWSTR)str.c_str();
 	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, "gkb_释义"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, u8"gkb_释义"));
 	vitem.iSubItem = 4;
 	vitem.pszText = (LPWSTR)str.c_str();
 	ListView_SetItem(hDictionaryListView_GKB, &vitem);
 
-	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, "gkb_例句"));
+	str = stringToWstring(reader->getValueInColumnByRow(neededRows.first, u8"gkb_例句"));
 	vitem.iSubItem = 5;
 	vitem.pszText = (LPWSTR)str.c_str();
 	ListView_SetItem(hDictionaryListView_GKB, &vitem);
@@ -709,12 +705,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					reader->loadXlsxFile(WTS_U8(part + L"缀" + pattern_end), WTS_U8(PART_OF_SPEECH_ZHUI), WTS_U8(wpath));
 				}
 
-
 				////////////////////////////////////////////////////////////////////
-				// 打开文件后默认显示当前词类选择列表中指定的表格，刷新主窗口
-				// 这样当未打开文件时，也可以随便选择词类，但是不会产生效果
-				resetPartOfSpeech();
-
+				//设置列
 				std::vector<std::string> columnNames{
 					u8"gkb_词语",
 					u8"gkb_词类",
@@ -731,9 +723,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					u8"示例",
 					u8"相似度"
 				};
-				//设置列，选择的列已被清空
 				reader->setColumnNames(columnNames);
 
+				////////////////////////////////////////////////////////////////////
+				// 打开文件后默认显示当前词类选择列表中指定的表格，刷新主窗口
+				// 这样当未打开文件时，也可以随便选择词类，但是不会产生效果
+				resetPartOfSpeech();
+				
 				//////////////////////////////////////////////////////////////////////
 				//TODO 激活某些控件
 				activeControls();
