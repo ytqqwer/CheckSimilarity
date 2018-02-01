@@ -179,7 +179,8 @@ bool ExcelReader::nextWorkbook()
 void ExcelReader::selectIsomorphicWordGroup()
 {
 	bool isOver = false;
-	curRowRangeBegin = curRowRangeEnd = curRow;	
+	curRowRangeBegin = curRow;	
+	curRowRangeEnd = curRow;
 	curWord = getCurCellValueInColumn(u8"gkb_词语");
 
 	std::set<std::string> setOfIsomorphic;
@@ -222,16 +223,13 @@ void ExcelReader::selectIsomorphicWordGroup()
 bool ExcelReader::nextWord()
 {
 	selRows.clear();
-
-	if (curRowRangeEnd <= maxRow) {
-		
+	if (curRowRangeEnd <= maxRow) {		
 		selectIsomorphicWordGroup();
 		
 		return true;
 	}
 	else
 		return nextWorkbook();// 切换到下一个工作簿
-
 }
 
 bool ExcelReader::isExistingFile()
@@ -280,6 +278,11 @@ void ExcelReader::setIsomorphicColumnName(const std::string & columnName)
 	isomorphicColumnName = columnName;
 }
 
+void ExcelReader::setWordColumnName(const std::string & columnName)
+{
+	wordColumnName = columnName;
+}
+
 unsigned int ExcelReader::sizeOfSelectedRows()
 {
 	return selRows.size();
@@ -308,6 +311,38 @@ std::string ExcelReader::getValueInColumnByRow(unsigned int row, const std::stri
 	}
 
 	return std::string("none");
+}
+
+bool ExcelReader::findWord(const std::string & word)
+{
+	unsigned int preCurRow = curRow;
+
+	curRow = 0;
+	for (auto& pair : selColumns)
+	{
+		if (pair.first == wordColumnName) 
+		{
+			for (auto& str : pair.second) 
+			{
+				if (str.to_string() == word) 
+				{
+
+					////////////////////
+					selRows.clear();
+
+
+					selectIsomorphicWordGroup();
+					return true;
+				}
+				else {
+					curRow++;
+				}
+			}
+			break;//不需要再遍历其他列
+		}
+	}
+	curRow = preCurRow;
+	return false;
 }
 
 void ExcelReader::setColumnNames(const std::vector<std::string>& names)

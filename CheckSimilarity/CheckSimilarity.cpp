@@ -9,6 +9,7 @@
 #include <CommCtrl.h>
 
 #include "ExcelReader.h"
+#include "Recorder.h"
 
 #include <ShlObj.h>							//选择文件夹用
 
@@ -35,12 +36,16 @@ const std::wstring PART_OF_SPEECH_XING = L"a";
 const std::wstring PART_OF_SPEECH_ZHU = L"u";
 const std::wstring PART_OF_SPEECH_ZHUI = L"缀";
 
+unsigned int rowOfGkb;
+unsigned int numberOfItem;
+
 // 全局变量: 
 HINSTANCE hInst;                                // 当前实例
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClassMain[MAX_LOADSTRING];            // 主窗口类名
 
 ExcelReader* reader;						//读取器
+Recorder* recorder;
 
 HWND hWindowMain;							//主窗口句柄
 
@@ -157,7 +162,29 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	reader = new ExcelReader();
-
+	//设置列
+	std::vector<std::string> columnNames{
+		u8"gkb_词语",
+		u8"gkb_词类",
+		u8"gkb_拼音",
+		u8"gkb_同形",
+		u8"gkb_释义",
+		u8"gkb_例句",
+		u8"ID",
+		u8"词语",
+		u8"义项编码",
+		u8"拼音",
+		u8"词性",
+		u8"义项释义",
+		u8"示例",
+		u8"相似度"
+	};
+	reader->setColumnNames(columnNames);
+	reader->setWordColumnName(u8"gkb_词语");
+	
+	recorder = new Recorder();
+	recorder->Init();
+		
 	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CHECKSIMILARITY));
 
 	MSG msg;
@@ -171,7 +198,11 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
+
+	//recorder->save();
+
 	delete reader;
+	delete recorder;
 
 	return (int)msg.wParam;
 }
@@ -271,7 +302,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		//////////////////////////////////////////////////////////////////////
 		//初始化GKB词典的列表视图
 		hDictionaryListView_GKB = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
-			30, 70, 740, 55, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
+			30, 70, 740, 60, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
 
 		WCHAR szText[256];     // Temporary buffer.
 		int iCol;
@@ -311,8 +342,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 		//////////////////////////////////////////////////////////////////////
 		//初始化XH词典的列表视图
-		hDictionaryListView_XH = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
+		hDictionaryListView_XH = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER|
+			LVS_REPORT | LVS_NOSORTHEADER | LVS_SHOWSELALWAYS,
 			30, 150, 740, 180, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
+
+		ListView_SetExtendedListViewStyle(hDictionaryListView_XH, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES);      //设置整行选择风格
+
 
 		// Add the columns.
 		for (iCol = 0; iCol < 8; iCol++)
@@ -351,7 +386,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//////////////////////////////////////////////////////////////////////
 	//Check按钮
 	hCheckButton = CreateWindow(_T("BUTTON"), _T("Check"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		670, 350, 100, 30, hWnd, (HMENU)ID_CHECK_BUTTON, hInst, NULL);
+		60, 350, 100, 30, hWnd, (HMENU)ID_CHECK_BUTTON, hInst, NULL);
 
 	//////////////////////////////////////////////////////////////////////
 	//“下一”按钮
@@ -367,28 +402,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	return TRUE;
 }
 
-// 搜索编辑框 的消息处理函数
-LRESULT CALLBACK subEditSearchProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case VK_RETURN:
-			//Do your stuff
-
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-
-			break;  //or return 0; if you don't want to pass it further to def proc
-					//If not your key, skip to default:
-		}
-	default:
-		return CallWindowProc(oldEditSearchProc, hWnd, msg, wParam, lParam);
-	}
-	return 0;
-}
-
 void resetPartOfSpeech()
 {
 	// If the user makes a selection from the list:
@@ -400,10 +413,6 @@ void resetPartOfSpeech()
 	TCHAR  part_of_speech[256];
 	(TCHAR)SendMessage(hPartOfSpeechComboBox, (UINT)CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)part_of_speech);
 
-	//if (reader->setPartOfSpeech(WTS_U8(part_of_speech))) {
-	//	//选择词组
-	//	/*reader->selectIsomorphicWordGroup();*/
-	//}
 	reader->setPartOfSpeech(WTS_U8(part_of_speech));
 }
 
@@ -414,6 +423,8 @@ void refreshListView()
 	ListView_DeleteAllItems(hDictionaryListView_XH);
 
 	std::pair<unsigned int, std::vector<unsigned int>> neededRows = reader->getRowByIndex(reader->curIsomorphicIndex);
+
+	rowOfGkb = neededRows.first;
 
 	LVITEM vitem;
 	vitem.mask = LVIF_TEXT;
@@ -454,9 +465,9 @@ void refreshListView()
 
 	////////////////////////////////////////////////////////////////////////
 	////词典2
-	unsigned int size = neededRows.second.size();
+	numberOfItem = neededRows.second.size();
 
-	for (unsigned int i = 0; i < size; i++)
+	for (unsigned int i = 0; i < numberOfItem; i++)
 	{
 		unsigned int row = neededRows.second[i];
 
@@ -505,10 +516,59 @@ void refreshListView()
 
 }
 
+void setCheckState() 
+{	
+	//获取当前GKB列表中的词语信息
+	TCHAR buf[256];
+	ListView_GetItemText(hDictionaryListView_GKB, 0, 0, buf, 256);//句柄，item，iSubItem，数组，选取的大小
+	std::string word = WTS_U8(buf);
+	ListView_GetItemText(hDictionaryListView_GKB, 0, 1, buf, 256);
+	std::string pos = WTS_U8(buf);
+	ListView_GetItemText(hDictionaryListView_GKB, 0, 2, buf, 256);
+	std::string alphabetic = WTS_U8(buf);
+	ListView_GetItemText(hDictionaryListView_GKB, 0, 3, buf, 256);
+	std::string isomorphic = WTS_U8(buf);
+	ListView_GetItemText(hDictionaryListView_GKB, 0, 4, buf, 256);
+	std::string meanings = WTS_U8(buf);
+	ListView_GetItemText(hDictionaryListView_GKB, 0, 5, buf, 256);
+	std::string example = WTS_U8(buf);
+
+	//从记录中寻找是否存在完全符合的词语
+	if (recorder->findRecord(word, pos, alphabetic, isomorphic, meanings, example)) 
+	{
+		std::vector<std::string> IDs = recorder->getIDs();
+
+		for (auto& id : IDs) 
+		{
+			for (unsigned int i = 0; i < numberOfItem; i++) 
+			{
+				 ListView_GetItemText(hDictionaryListView_XH, i, 0, buf, 256);
+				 
+				 if (id == WTS_U8(buf)) {
+
+					 ListView_SetCheckState(hDictionaryListView_XH,i,TRUE);
+					 break;
+				 }
+
+
+			}
+		}
+
+	}
+	else {
+		return;
+	}
+
+}
+
+
 
 void refreshMainWindow()
 {
 	refreshListView();
+
+	setCheckState();
+
 
 	//////////////////////////////////////////////////////////////////////
 	//TODO 设置搜索框中的文本
@@ -516,6 +576,11 @@ void refreshMainWindow()
 	//str = stringToWstring(reader->getCurCellValueInColumn(u8"相似度"));
 	//SetWindowText(hSimilarityText, (LPWSTR)str.c_str());		// 相似度
 
+	//SetFocus(hDictionaryListView_XH);   //获得焦点
+	//ListView_SetItemState(hDictionaryListView_XH, 0, LVIS_SELECTED, LVIS_SELECTED);       //使第1行处于选择中状态
+	//ListView_SetItemState(hDictionaryListView_XH, 1, LVIS_SELECTED, LVIS_SELECTED);       //使第2行处于选择中状态
+	//ListView_SetExtendedListViewStyle(hDictionaryListView_XH, LVS_EX_FULLROWSELECT);      //设置整行选择风格
+	
 }
 
 
@@ -580,20 +645,86 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case ID_SEARCH_BUTTON:
 		{
+			TCHAR buff[80] = _T("");
+			GetWindowText(hSearchEdit, buff, 80);
+			std::string str = WTS_U8(buff);
 
-			MessageBox(hWnd, L"您点击了一个按钮。", L"提示", MB_OK);
-
+			if (reader->findWord(str)) {
+				reader->curIsomorphicIndex = 0;
+				refreshMainWindow();
+			}
+			else {
+				MessageBox(hWnd, L"在当前词类下未找到该词语。", L"提示", MB_OK);
+			}
 		}
 		break;
-		case ID_CHECK_BUTTON:
-			MessageBox(hWnd, L"点了个按钮。", L"提示", MB_OK);
+		case ID_CHECK_BUTTON: 
+		{
+			//存储选取的id，使用string类型记录，虽然效率会差很多
+			std::vector<std::string> ids;
+			for (unsigned int i = 0; i < numberOfItem; i++)
+			{
+				if (ListView_GetCheckState(hDictionaryListView_XH, i)) {
+
+					TCHAR buf[256];
+					ListView_GetItemText(hDictionaryListView_XH, i, 0, buf, 256);
+
+					ids.push_back(WTS_U8(buf));
+					//MessageBox(hWnd, buf, L"提示", MB_OK);
+				}
+
+			}
+
+			//获取当前GKB列表中的词语信息
+			TCHAR buf[256];
+			ListView_GetItemText(hDictionaryListView_GKB, 0, 0, buf, 256);//句柄，item，iSubItem，数组，选取的大小
+			std::string word = WTS_U8(buf);
+			ListView_GetItemText(hDictionaryListView_GKB, 0, 1, buf, 256);
+			std::string pos = WTS_U8(buf);
+			ListView_GetItemText(hDictionaryListView_GKB, 0, 2, buf, 256);
+			std::string alphabetic = WTS_U8(buf);
+			ListView_GetItemText(hDictionaryListView_GKB, 0, 3, buf, 256);
+			std::string isomorphic = WTS_U8(buf);
+			ListView_GetItemText(hDictionaryListView_GKB, 0, 4, buf, 256);
+			std::string meanings = WTS_U8(buf);
+			ListView_GetItemText(hDictionaryListView_GKB, 0, 5, buf, 256);
+			std::string example = WTS_U8(buf);
+			
+			//从记录中寻找是否存在完全符合的词语
+			if (recorder->findRecord(word, pos, alphabetic, isomorphic, meanings, example))
+			{
+				recorder->updateIDs(ids);
+			}
+			else {
+				//没找到相同记录，插入新的记录
+
+
+				std::vector<std::string> vector;
+				std::string str;
+				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词语");
+				vector.push_back(str);
+				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词类");
+				vector.push_back(str);
+				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_拼音");
+				vector.push_back(str);
+				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_同形");
+				vector.push_back(str);
+				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_释义");
+				vector.push_back(str);
+				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_例句");
+				vector.push_back(str);
+
+				recorder->insertNewRecord(vector, ids);
+			}
+
+			
+		}
 			break;
 		case ID_NEXT_WORD_BUTTON:
 		{
 			if (reader->isExistingFile()) {
 
 				if (reader->curIsomorphicIndex + 1 < reader->numberOfIsomorphic) {
-
 					reader->curIsomorphicIndex++;
 
 					refreshMainWindow();
@@ -605,10 +736,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				else
 					MessageBox(hWnd, L"已是最后一个词语。", L"提示", MB_OK);
-
 			}
-
-
+			
 		}
 		break;
 		case IDM_ABOUT:
@@ -706,26 +835,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 
 				////////////////////////////////////////////////////////////////////
-				//设置列
-				std::vector<std::string> columnNames{
-					u8"gkb_词语",
-					u8"gkb_词类",
-					u8"gkb_拼音",
-					u8"gkb_同形",
-					u8"gkb_释义",
-					u8"gkb_例句",
-					u8"ID",
-					u8"词语",
-					u8"义项编码",
-					u8"拼音",
-					u8"词性",
-					u8"义项释义",
-					u8"示例",
-					u8"相似度"
-				};
-				reader->setColumnNames(columnNames);
-
-				////////////////////////////////////////////////////////////////////
 				// 打开文件后默认显示当前词类选择列表中指定的表格，刷新主窗口
 				// 这样当未打开文件时，也可以随便选择词类，但是不会产生效果
 				resetPartOfSpeech();
@@ -737,6 +846,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				refreshMainWindow();
 			}
 
+		}
+		break;
+		case IDM_SAVE:
+		{
+			recorder->save();
+			MessageBox(hWnd, L"已保存。", L"提示", MB_OK);
 		}
 		break;
 		default:
@@ -768,12 +883,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case WM_DESTROY:
+	{
+		recorder->save();
 		PostQuitMessage(0);
+	}
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 
+	return 0;
+}
+
+// 搜索编辑框 的消息处理函数
+LRESULT CALLBACK subEditSearchProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case VK_RETURN:
+			//Do your stuff
+
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+
+			break;  //or return 0; if you don't want to pass it further to def proc
+					//If not your key, skip to default:
+		}
+	default:
+		return CallWindowProc(oldEditSearchProc, hWnd, msg, wParam, lParam);
+	}
 	return 0;
 }
 

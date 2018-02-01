@@ -33,6 +33,9 @@
     <ClInclude Include="ExcelReader.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Recorder.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -42,6 +45,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ExcelReader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Recorder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

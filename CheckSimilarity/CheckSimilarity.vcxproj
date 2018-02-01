@@ -180,6 +180,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ExcelReader.h" />
+    <ClInclude Include="Recorder.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="CheckSimilarity.h" />
     <ClInclude Include="stdafx.h" />
@@ -188,6 +189,7 @@
   <ItemGroup>
     <ClCompile Include="ExcelReader.cpp" />
     <ClCompile Include="CheckSimilarity.cpp" />
+    <ClCompile Include="Recorder.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

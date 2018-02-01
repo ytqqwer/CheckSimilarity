@@ -22,10 +22,13 @@ public:
 	bool isExistingFile();
 
 	void setIsomorphicColumnName(const std::string& columnName);
+	void setWordColumnName(const std::string& columnName);
 	
 	std::pair<unsigned int, std::vector<unsigned int>> getRowByIndex(unsigned int);
 
 	std::string getValueInColumnByRow(unsigned int row,const std::string& columnName);
+	
+	bool findWord(const std::string& word);
 	
 public:	
 	unsigned int numberOfIsomorphic;
@@ -52,11 +55,11 @@ private:
 	std::vector<std::string> fileNames;
 	std::vector<std::pair<std::string, std::vector<xlnt::workbook>>> loadedWorkbook;	 //已加载的工作簿
 
+	std::string wordColumnName;
 	std::string isomorphicColumnName;
 
 private:
-	std::string curWord;	//当前词语
-
+	std::string curWord;
 	
 	unsigned int curRow;		
 	unsigned int curRowRangeBegin;//当前词组范围
