@@ -8,7 +8,7 @@
 
 ExcelReader::ExcelReader()
 {
-	maxRow = curRow = curRowRangeBegin = curRowRangeEnd = 1;
+	highestRow = curRow = curRowRangeBegin = curRowRangeEnd = 1;
 	curWorkbookIndex = 0;
 	existingFile = false;
 }
@@ -29,6 +29,16 @@ void ExcelReader::clear()
 	fileNames.clear();
 	loadedWorkbook.clear();
 
+}
+
+void ExcelReader::reset()
+{
+	selColumns.clear();
+	selRows.clear();
+	curRow = 1;
+	curRowRangeBegin = 1;
+	curRowRangeEnd = 1;
+	curWorkbookIndex = 0;
 }
 
 void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & partOfSpeech, const std::string& path)
@@ -67,16 +77,10 @@ void ExcelReader::loadXlsxFile(const std::string & pattern, const std::string & 
 bool ExcelReader::setPartOfSpeech(const std::string & str)
 {
 	curPartOfSpeech = str;
-
 	//重新选择工作簿，并且跳过空表
-	selColumns.clear();
-	selRows.clear();
-	curRow = 1;
-	curRowRangeBegin = 1;
-	curRowRangeEnd = 1;
-	curWorkbookIndex = 0;
+	reset();
 
-	return skipEmptyWorkbook();	
+	return skipEmptyWorkbook();
 }
 
 bool ExcelReader::skipEmptyWorkbook()
@@ -84,67 +88,97 @@ bool ExcelReader::skipEmptyWorkbook()
 	for (auto& pair : loadedWorkbook) {
 		if (pair.first == curPartOfSpeech) {
 			unsigned int totalWorkbook = pair.second.size();
-			
-			if (curWorkbookIndex < totalWorkbook ) {
-				
-				xlnt::worksheet curWorksheet = pair.second[curWorkbookIndex].active_sheet();
 
-				//最大行数减一，去掉列名
-				auto rows = curWorksheet.rows(false);
-				maxRow = rows.length() - 1;
+			if (curWorkbookIndex < totalWorkbook) {
+				xlnt::worksheet& curWorksheet = pair.second[curWorkbookIndex].active_sheet();
 
-				if (maxRow < curRow)
+				//highestRow = curWorksheet.highest_row();
+
+				auto& rows = curWorksheet.rows();
+				int i = 0;
+				for (auto& word : rows) {					
+					if (word[0].to_string() != u8"") {
+						i++;
+					}
+				}
+				highestRow = i;
+
+
+
+				if (highestRow > curRow)
 				{
-					curWorkbookIndex++;
-					return skipEmptyWorkbook();
+					selectColumn(curWorkbookIndex);//不需要再跳过，重新选择列					
+					selectNextIsomorphicWordGroup(curRow);//重新选择词组
+					return true;
 				}
 				else
 				{
-					//不需要再跳过，重新选择列
-					selectColumn();
-					//重新选择词组
-					selectIsomorphicWordGroup();
-					return true;
+					curWorkbookIndex++;
+					return skipEmptyWorkbook();
 				}
 			}
 			else
 				return false;
 		}
 	}
-
 	return false;
 }
 
-//默认选取std::vector<xlnt::workbook>中的第一个，如果有的话
 bool ExcelReader::changeWorkbook(unsigned int index)
 {
-	//重置
-	selColumns.clear();
-	selRows.clear();
-	curRow = 1;
-	curRowRangeEnd = 1;
+	reset();//重置
 	curWorkbookIndex = index;
 
 	for (auto& pair : loadedWorkbook) {
 		if (pair.first == curPartOfSpeech) {
 
-			xlnt::worksheet curWorksheet = pair.second[index].active_sheet();
+			xlnt::worksheet& curWorksheet = pair.second[index].active_sheet();
 
-			//统计总行数，最大行数减一，去掉列名
-			auto rows = curWorksheet.rows(false);
-			maxRow = rows.length() - 1;
+			//highestRow = curWorksheet.highest_row();
 
-			if (maxRow < curRow)
+			auto& rows = curWorksheet.rows();
+			int i = 0;
+			for (auto& word : rows) {
+				if (word[0].to_string() != u8"") {
+					i++;
+				}
+			}
+			highestRow = i;
+
+
+			if (highestRow > curRow)
 			{
-				return false; //说明当前工作簿只有一行列名，返回false
+				selectColumn(index);
+				return true;
 			}
 			else
 			{
-				selectColumn();
-				//重新选择词组
-				selectIsomorphicWordGroup();
-				return true;
+				return false; //说明当前工作簿只有一行列名，返回false
 			}
+		}
+	}
+	return false;//什么也没找到
+}
+
+bool ExcelReader::prevWorkbook()
+{
+	for (auto& pair : loadedWorkbook) {
+		if (pair.first == curPartOfSpeech) {
+
+			if (0 < curWorkbookIndex) {
+				curWorkbookIndex--;
+
+				if (changeWorkbook(curWorkbookIndex)) {
+					//重新选择词组
+					selectPreviousIsomorphicWordGroup(highestRow - 1);
+					return true;
+				}
+				else {
+					return prevWorkbook();
+				}
+			}
+			else
+				return false;
 		}
 	}
 
@@ -157,10 +191,12 @@ bool ExcelReader::nextWorkbook()
 		if (pair.first == curPartOfSpeech) {
 			unsigned int totalWorkbook = pair.second.size();
 
-			if (curWorkbookIndex + 1 < totalWorkbook) {	//减1，防止索引越界
+			if (curWorkbookIndex < totalWorkbook - 1) {	//防止索引越界
 				curWorkbookIndex++;
 
 				if (changeWorkbook(curWorkbookIndex)) {
+					//重新选择词组
+					selectNextIsomorphicWordGroup(1);
 					return true;
 				}
 				else {
@@ -175,57 +211,114 @@ bool ExcelReader::nextWorkbook()
 	return false;//什么也没找到
 }
 
-//搜索词语同形的对应关系
-void ExcelReader::selectIsomorphicWordGroup()
+void ExcelReader::selectPreviousIsomorphicWordGroup(unsigned int row)
 {
-	bool isOver = false;
-	curRowRangeBegin = curRow;	
-	curRowRangeEnd = curRow;
-	curWord = getCurCellValueInColumn(u8"gkb_词语");
+	selRows.clear();
 
-	std::set<std::string> setOfIsomorphic;
+	curRowRangeBegin = row;
+	curRowRangeEnd = row;
 
 	//获得词语的范围与同形数量
-	while (!isOver) {
-		std::string& word = getCurCellValueInColumn(u8"gkb_词语");
-		if (curWord == word) 
+	std::set<std::string> setOfIsomorphic;
+	curWord = getCurCellValueInColumn(row, u8"gkb_词语");
+	bool isOver = false;
+	while (!isOver)
+	{
+		std::string& word = getCurCellValueInColumn(row, u8"gkb_词语");
+		if (curWord == word && word != u8"")
 		{
-			setOfIsomorphic.insert(getCurCellValueInColumn(u8"gkb_同形"));
-			curRow++;
-			curRowRangeEnd++;
+			setOfIsomorphic.insert(getCurCellValueInColumn(row, u8"gkb_同形"));
+			row--;
 		}
-		else 
+		else
 		{
 			isOver = true;
 		}
 	}
-	
+
+	curRowRangeBegin = row + 1;
+
 	//寻找同形所在行
-	unsigned int row_of_isomorphic = 1;			//某一同形对应的词语所在行数，不一定是首个对应词语
+	unsigned int row_of_isomorphic = highestRow;			//某一同形对应的词语所在行数，不一定是首个对应词语
 	std::vector<unsigned int> matchedRows;	//匹配上的行
 	for (auto& isomorphic : setOfIsomorphic) {
-		for (curRow = curRowRangeBegin; curRow < curRowRangeEnd; curRow++)
-		{			
-			if (isomorphic == getCurCellValueInColumn(u8"gkb_同形")) {
-				row_of_isomorphic = curRow;
-				matchedRows.push_back(curRow);
+		for (row = curRowRangeBegin; row <= curRowRangeEnd; row++)
+		{
+			if (isomorphic == getCurCellValueInColumn(row, u8"gkb_同形")) {
+				row_of_isomorphic = row;
+				matchedRows.push_back(row);
 			}
 		}
 		selRows.push_back(make_pair(row_of_isomorphic, matchedRows));
 		matchedRows.clear();
 	}
-	
+
 	numberOfIsomorphic = sizeOfSelectedRows();
 	curIsomorphicIndex = 0;
+	curRow = row;
 }
 
-// 如果已达到最后一行，则返回false
-bool ExcelReader::nextWord()
+//搜索词语同形的对应关系
+void ExcelReader::selectNextIsomorphicWordGroup(unsigned int row)
 {
 	selRows.clear();
-	if (curRowRangeEnd <= maxRow) {		
-		selectIsomorphicWordGroup();
-		
+
+	curRowRangeBegin = row;
+	curRowRangeEnd = row;
+
+	std::set<std::string> setOfIsomorphic;
+
+	//获得词语的范围与同形数量
+	curWord = getCurCellValueInColumn(row, u8"gkb_词语");
+	bool isOver = false;
+	while (!isOver) {
+		std::string& word = getCurCellValueInColumn(row, u8"gkb_词语");
+		if (curWord == word && word != u8"")
+		{
+			setOfIsomorphic.insert(getCurCellValueInColumn(row, u8"gkb_同形"));
+			row++;
+		}
+		else
+		{
+			isOver = true;
+		}
+	}
+	curRowRangeEnd = row - 1;
+
+	//寻找同形所在行
+	unsigned int row_of_isomorphic = 1;			//某一同形对应的词语所在行数，不一定是首个对应词语
+	std::vector<unsigned int> matchedRows;	//匹配上的行
+	for (auto& isomorphic : setOfIsomorphic) {
+		for (row = curRowRangeBegin; row <= curRowRangeEnd; row++)
+		{
+			if (isomorphic == getCurCellValueInColumn(row, u8"gkb_同形")) {
+				row_of_isomorphic = row;
+				matchedRows.push_back(row);
+			}
+		}
+		selRows.push_back(make_pair(row_of_isomorphic, matchedRows));
+		matchedRows.clear();
+	}
+
+	numberOfIsomorphic = sizeOfSelectedRows();
+	curIsomorphicIndex = 0;
+	curRow = row;
+}
+
+bool ExcelReader::prevWord()
+{
+	if (0 < curRowRangeBegin - 1) {
+		selectPreviousIsomorphicWordGroup(curRowRangeBegin - 1);
+		return true;
+	}
+	else
+		return prevWorkbook();// 切换到上一个工作簿
+}
+
+bool ExcelReader::nextWord()
+{
+	if (curRowRangeEnd + 1 < highestRow) {
+		selectNextIsomorphicWordGroup(curRowRangeEnd + 1);
 		return true;
 	}
 	else
@@ -237,13 +330,13 @@ bool ExcelReader::isExistingFile()
 	return existingFile;
 }
 
-void ExcelReader::selectColumn()
+void ExcelReader::selectColumn(unsigned int workbookIndex)
 {
 	for (auto& columnName : columnNames) {
 		for (auto& pair : loadedWorkbook) {
 			if (pair.first == curPartOfSpeech) {
 
-				xlnt::worksheet curWorksheet = pair.second[curWorkbookIndex].active_sheet();
+				xlnt::worksheet& curWorksheet = pair.second[workbookIndex].active_sheet();
 
 				auto columns = curWorksheet.columns(false);
 				for (auto& column : columns) {
@@ -262,11 +355,11 @@ void ExcelReader::selectColumn()
 
 }
 
-std::string ExcelReader::getCurCellValueInColumn(const std::string & columnName)
+std::string ExcelReader::getCurCellValueInColumn(unsigned int row, const std::string & columnName)
 {
 	for (auto& pair : selColumns) {
 		if (pair.first == columnName) {
-			return pair.second[curRow].to_string();
+			return pair.second[row].to_string();
 		}
 	}
 
@@ -288,7 +381,7 @@ unsigned int ExcelReader::sizeOfSelectedRows()
 	return selRows.size();
 }
 
-std::pair<unsigned int, std::vector<unsigned int>> ExcelReader::getRowByIndex(unsigned int index)
+std::pair<unsigned int, std::vector<unsigned int>> ExcelReader::getRowsByIndex(unsigned int index)
 {
 	unsigned int i = 0;
 	for (auto& pair : selRows) {
@@ -316,32 +409,53 @@ std::string ExcelReader::getValueInColumnByRow(unsigned int row, const std::stri
 bool ExcelReader::findWord(const std::string & word)
 {
 	unsigned int preCurRow = curRow;
+	unsigned int preWorkbookIndex = curWorkbookIndex;
 
-	curRow = 0;
-	for (auto& pair : selColumns)
-	{
-		if (pair.first == wordColumnName) 
-		{
-			for (auto& str : pair.second) 
+	for (auto& pair : loadedWorkbook) {
+		if (pair.first == curPartOfSpeech) {
+			unsigned int totalWorkbook = pair.second.size();
+
+			for (curWorkbookIndex = 0; curWorkbookIndex < totalWorkbook; curWorkbookIndex++)
 			{
-				if (str.to_string() == word) 
-				{
+				if (curWorkbookIndex < totalWorkbook) {
+					changeWorkbook(curWorkbookIndex);
 
-					////////////////////
-					selRows.clear();
+					for (auto& column : selColumns)
+					{
+						if (column.first == wordColumnName)
+						{
+							for (auto& str : column.second)
+							{
+								if (str.to_string() == word)
+								{
+									curRow--;//列中数据包含了列名，去掉因为列名多加的1
 
+									selectNextIsomorphicWordGroup(curRow);
+									return true;
+								}
+								else {
+									curRow++;
+								}
+							}
+							break;//不需要再遍历其他列
+						}
+					}
 
-					selectIsomorphicWordGroup();
-					return true;
 				}
-				else {
-					curRow++;
-				}
+				else
+					return false;
+
 			}
-			break;//不需要再遍历其他列
+
 		}
 	}
+
+	curWorkbookIndex = preWorkbookIndex;
 	curRow = preCurRow;
+
+	changeWorkbook(curWorkbookIndex);
+	selectNextIsomorphicWordGroup(curRow);
+
 	return false;
 }
 

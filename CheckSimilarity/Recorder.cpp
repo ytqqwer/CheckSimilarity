@@ -34,7 +34,7 @@ Recorder::~Recorder()
 void Recorder::Init()
 {
 	std::fstream _file;
-	_file.open("record.xlsx",std::ios::in);
+	_file.open(u8"record.xlsx",std::ios::in);
 	if (!_file)
 	{
 		//没有被创建
@@ -55,7 +55,7 @@ void Recorder::Init()
 	else
 	{
 		//已经存在
-		wb.load("record.xlsx");
+		wb.load(u8"record.xlsx");
 
 		//获取最大行数
 		auto& ws = wb.active_sheet();

@@ -213,17 +213,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\char-props.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\genx.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\parser.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\qname.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\serializer.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\value-traits.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\xmlparse.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\xmlrole.obj" />
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\xmltok.obj" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="CheckSimilarity.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

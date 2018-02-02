@@ -62,7 +62,7 @@
 #define ID_COLUMN_SIMILARITY			2107
 
 #define ID_NEXT_WORD_BUTTON             3055
-#define ID_NEXT_SENSE_BUTTON            3056
+#define ID_PREV_WORD_BUTTON             3056
 #define ID_CHECK_BUTTON					3057
 
 #define IDC_STATIC                      -1

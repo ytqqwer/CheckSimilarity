@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Object Libraries">
-      <UniqueIdentifier>{b57d9253-9d27-4c97-91ab-4115147fd319}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -58,35 +55,6 @@
     <Image Include="CheckSimilarity.ico">
       <Filter>资源文件</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\xmlparse.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\xmlrole.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\xmltok.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\char-props.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\genx.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\parser.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\qname.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\serializer.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
-    <Object Include="..\..\xlnt-master\proj.win32\source\third-party\libstudxml\libstudxml.dir\Debug\value-traits.obj">
-      <Filter>Object Libraries</Filter>
-    </Object>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CheckSimilarity.rc">

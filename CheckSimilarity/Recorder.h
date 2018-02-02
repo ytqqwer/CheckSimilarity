@@ -11,10 +11,7 @@ public:
 	void Init();
 
 	void insertNewRecord(const std::vector<std::string>& word, const std::vector<std::string>& ids);
-
-	void insertWord(const std::vector<std::string>&);
-	void insertID(const std::vector<std::string>&);
-
+	
 	void toNextWord();
 
 	bool findRecord(const std::string&, const  std::string&, const  std::string&, const std::string&, const  std::string&, const  std::string&);
@@ -23,6 +20,11 @@ public:
 	
 	std::vector<std::string> getIDs();
 	void updateIDs(const std::vector<std::string>&);
+
+private:
+
+	void insertWord(const std::vector<std::string>&);
+	void insertID(const std::vector<std::string>&);
 
 private:	
 	xlnt::workbook wb;
