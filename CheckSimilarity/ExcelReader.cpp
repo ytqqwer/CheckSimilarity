@@ -225,7 +225,7 @@ void ExcelReader::selectPreviousIsomorphicWordGroup(unsigned int row)
 	while (!isOver)
 	{
 		std::string& word = getCurCellValueInColumn(row, u8"gkb_词语");
-		if (curWord == word && word != u8"")
+		if (curWord == word && word != u8"" && curWord != u8"")
 		{
 			setOfIsomorphic.insert(getCurCellValueInColumn(row, u8"gkb_同形"));
 			row--;
@@ -273,7 +273,7 @@ void ExcelReader::selectNextIsomorphicWordGroup(unsigned int row)
 	bool isOver = false;
 	while (!isOver) {
 		std::string& word = getCurCellValueInColumn(row, u8"gkb_词语");
-		if (curWord == word && word != u8"")
+		if (curWord == word && word != u8"" && curWord != u8"")
 		{
 			setOfIsomorphic.insert(getCurCellValueInColumn(row, u8"gkb_同形"));
 			row++;

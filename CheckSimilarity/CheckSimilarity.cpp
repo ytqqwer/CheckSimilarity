@@ -56,21 +56,19 @@ HWND hPartOfSpeechComboBox;					// 类别下拉列表句柄
 HWND hDictionaryListView_GKB;				// 词典1列表视图句柄
 HWND hDictionaryListView_XH;				// 词典2列表视图句柄
 
-HWND hSimilarityText;						// 相似度
-HWND hRelationshipText;						// 对应关系
-HWND hNewRelationshipText;					// 新对应关系
-
 HWND hCheckButton;							// 按钮句柄
 HWND hPrevWordButton;
 HWND hNextWordButton;
 
-WNDPROC oldEditSearchProc;//旧搜索编辑框处理过程
+WNDPROC oldEditSearchProc;					//旧搜索编辑框处理过程
 
 // 此代码模块中包含的函数的前向声明: 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+
+VOID				activeControls(bool);
 
 //搜索编辑框处理过程
 LRESULT CALLBACK	subEditSearchProc(HWND, UINT, WPARAM, LPARAM);
@@ -132,8 +130,6 @@ void CharToTchar(const char * _char, TCHAR * tchar)
 	iLength = MultiByteToWideChar(CP_UTF8, 0, _char, strlen(_char) + 1, NULL, 0);
 	MultiByteToWideChar(CP_UTF8, 0, _char, strlen(_char) + 1, tchar, iLength);
 }
-
-
 
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
@@ -236,7 +232,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	hInst = hInstance; // 将实例句柄存储在全局变量中
 
-	HWND hWnd = CreateWindowW(szWindowClassMain, szTitle, WS_OVERLAPPEDWINDOW,
+	HWND hWnd = CreateWindowW(szWindowClassMain, szTitle, WS_OVERLAPPEDWINDOW^WS_THICKFRAME,
 		CW_USEDEFAULT, 0, 800, 450, nullptr, nullptr, hInstance, nullptr);
 
 	hWindowMain = hWnd;
@@ -250,6 +246,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//初始化搜索编辑框
 	hSearchEdit = CreateWindow(_T("EDIT"), NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_LEFT,
 		70, 25, 200, 30, hWnd, (HMENU)ID_SEARCH_EDIT, hInst, NULL);
+	//设置处理过程
 	oldEditSearchProc = (WNDPROC)SetWindowLongPtr(hSearchEdit, GWLP_WNDPROC, (LONG_PTR)subEditSearchProc);
 
 	//////////////////////////////////////////////////////////////////////
@@ -309,17 +306,17 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 			lvc.fmt = LVCFMT_LEFT;		// Left-aligned column.
 
 			if (iCol < 1)				// Width of column in pixels.
-				lvc.cx = 50;			//词语
+				lvc.cx = 60;			//词语
 			else if (iCol < 2)
-				lvc.cx = 50;			//词类
+				lvc.cx = 40;			//词类
 			else if (iCol < 3)
 				lvc.cx = 100;			//拼音
 			else if (iCol < 4)
-				lvc.cx = 50;			//同形
+				lvc.cx = 40;			//同形
 			else if (iCol < 5)
-				lvc.cx = 240;			//释义
+				lvc.cx = 245;			//释义
 			else
-				lvc.cx = 250;			//例句
+				lvc.cx = 255;			//例句
 
 			// Load the names of the column headings from the string resources.
 			LoadString(hInst, ID_COLUMN_GKB_WORDS + iCol, szText, sizeof(szText) / sizeof(szText[0]));
@@ -351,7 +348,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 			else if (iCol < 3)
 				lvc.cx = 90;			//义项编码
 			else if (iCol < 4)
-				lvc.cx = 70;			//拼音
+				lvc.cx = 75;			//拼音
 			else if (iCol < 5)
 				lvc.cx = 40;			//词性
 			else if (iCol < 6)
@@ -387,8 +384,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		450, 350, 100, 30, hWnd, (HMENU)ID_NEXT_WORD_BUTTON, hInst, NULL);
 
 	//////////////////////////////////////////////////////////////////////
-	// TODO 禁用某些按钮，直到被激活
+	// 禁用某些功能，直到被激活，TRUE使用，FALSE禁止
+	activeControls(FALSE);
 
+	///////////////////////////////////////////////////////////////////////
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -575,10 +574,16 @@ void refreshMainWindow()
 
 
 // 激活某些控件
-void activeControls()
+void activeControls(bool boolean)
 {
-	//TODO
-
+	EnableWindow(hSearchButton, boolean);
+	EnableWindow(hSearchEdit, boolean);
+	//EnableWindow(hPartOfSpeechComboBox, boolean);
+	EnableWindow(hCheckButton, boolean);
+	EnableWindow(hPrevWordButton, boolean);
+	EnableWindow(hNextWordButton, boolean);
+	EnableWindow(hDictionaryListView_GKB, boolean);
+	EnableWindow(hDictionaryListView_XH, boolean);
 }
 
 void search() 
@@ -856,8 +861,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				resetPartOfSpeech();
 
 				//////////////////////////////////////////////////////////////////////
-				//TODO 激活某些控件
-				activeControls();
+				// 激活某些控件
+				activeControls(TRUE);
 
 				refreshMainWindow();
 			}
