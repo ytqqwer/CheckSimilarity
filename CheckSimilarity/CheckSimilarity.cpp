@@ -131,7 +131,6 @@ void CharToTchar(const char * _char, TCHAR * tchar)
 	MultiByteToWideChar(CP_UTF8, 0, _char, strlen(_char) + 1, tchar, iLength);
 }
 
-
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
@@ -245,14 +244,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//////////////////////////////////////////////////////////////////////
 	//初始化搜索编辑框
 	hSearchEdit = CreateWindow(_T("EDIT"), NULL, WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | ES_LEFT,
-		70, 20, 200, 30, hWnd, (HMENU)ID_SEARCH_EDIT, hInst, NULL);
+		70, 10, 200, 30, hWnd, (HMENU)ID_SEARCH_EDIT, hInst, NULL);
 	//设置处理过程
 	oldEditSearchProc = (WNDPROC)SetWindowLongPtr(hSearchEdit, GWLP_WNDPROC, (LONG_PTR)subEditSearchProc);
 
 	//////////////////////////////////////////////////////////////////////
 	//初始化类别下拉列表
 	hPartOfSpeechComboBox = CreateWindow(WC_COMBOBOX, _T(""), CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
-		600, 20, 100, 500, hWnd, (HMENU)ID_PART_OF_SPEECH_COMBOBOX, hInst, NULL);
+		600, 10, 100, 500, hWnd, (HMENU)ID_PART_OF_SPEECH_COMBOBOX, hInst, NULL);
 
 	// load the combobox with item list. Send a CB_ADDSTRING message to load each item
 	TCHAR temp[100];
@@ -268,27 +267,39 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//////////////////////////////////////////////////////////////////////
 	//初始化搜索按钮
 	hSearchButton = CreateWindow(_T("BUTTON"), _T("搜索"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		310, 20, 100, 30, hWnd, (HMENU)ID_SEARCH_BUTTON, hInst, NULL);
+		310, 10, 100, 30, hWnd, (HMENU)ID_SEARCH_BUTTON, hInst, NULL);
 
 	//////////////////////////////////////////////////////////////////////
 	//初始化文本	
-	HWND hWordText = CreateWindow(_T("static"), _T("词语"), WS_CHILD | WS_VISIBLE | SS_LEFT, 30, 25, 30, 30, hWnd,
+	HWND hWordText = CreateWindow(_T("static"), _T("词语"), WS_CHILD | WS_VISIBLE | SS_LEFT, 30, 15, 30, 30, hWnd,
 		NULL, hInst, NULL);
 
-	HWND hPosText = CreateWindow(_T("static"), _T("选择词类"), WS_CHILD | WS_VISIBLE | SS_LEFT, 500, 25, 80, 30, hWnd,
+	HWND hPosText = CreateWindow(_T("static"), _T("选择词类"), WS_CHILD | WS_VISIBLE | SS_LEFT, 500, 15, 80, 30, hWnd,
 		NULL, hInst, NULL);
 
 	HFONT hFont = CreateFont(20, 0, 0, 0, 0, FALSE, FALSE, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"微软雅黑");//创建字体
+
 	SendMessage(hSearchButton, WM_SETFONT, (WPARAM)hFont, TRUE);//发送设置字体消息
 	SendMessage(hSearchEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
-	SendMessage(hWordText, WM_SETFONT, (WPARAM)hFont, TRUE);//发送设置字体消息
+
+	SendMessage(hWordText, WM_SETFONT, (WPARAM)hFont, TRUE);
 	SendMessage(hPosText, WM_SETFONT, (WPARAM)hFont, TRUE);
+
+	HWND hGkbText = CreateWindow(_T("static"), _T("GKB现代汉语语法信息词典"), WS_CHILD | WS_VISIBLE | SS_LEFT, 30, 47, 300, 30, hWnd,
+		NULL, hInst, NULL);
+
+	HWND hXhText = CreateWindow(_T("static"), _T("现代汉语词典"), WS_CHILD | WS_VISIBLE | SS_LEFT, 30, 135, 300, 30, hWnd,
+		NULL, hInst, NULL);
+
+	SendMessage(hGkbText, WM_SETFONT, (WPARAM)hFont, TRUE);
+	SendMessage(hXhText, WM_SETFONT, (WPARAM)hFont, TRUE);
+
 
 	{
 		//////////////////////////////////////////////////////////////////////
 		//初始化GKB词典的列表视图
 		hDictionaryListView_GKB = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_NOSORTHEADER,
-			25, 65, 740, 60, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
+			25, 70, 740, 60, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
 
 		WCHAR szText[256];     // Temporary buffer.
 		int iCol;
@@ -330,7 +341,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		//初始化XH词典的列表视图
 		hDictionaryListView_XH = CreateWindowW(WC_LISTVIEW, L"", WS_CHILD | WS_VISIBLE | WS_BORDER |
 			LVS_REPORT | LVS_NOSORTHEADER | LVS_SHOWSELALWAYS,
-			25, 145, 740, 180, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
+			25, 160, 740, 180, hWnd, (HMENU)ID_DICTIONARY_ONE_LISTVIEW, hInst, NULL);
 
 		ListView_SetExtendedListViewStyle(hDictionaryListView_XH, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES);      //设置整行选择风格
 
@@ -371,17 +382,17 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//////////////////////////////////////////////////////////////////////
 	//Check按钮
 	hCheckButton = CreateWindow(_T("BUTTON"), _T("Check"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		60, 340, 100, 30, hWnd, (HMENU)ID_CHECK_BUTTON, hInst, NULL);
+		60, 350, 100, 30, hWnd, (HMENU)ID_CHECK_BUTTON, hInst, NULL);
 
 	//////////////////////////////////////////////////////////////////////
 	//“上一”按钮
 	hPrevWordButton = CreateWindow(_T("BUTTON"), _T("上一个"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		250, 340, 100, 30, hWnd, (HMENU)ID_PREV_WORD_BUTTON, hInst, NULL);
+		250, 350, 100, 30, hWnd, (HMENU)ID_PREV_WORD_BUTTON, hInst, NULL);
 
 	//////////////////////////////////////////////////////////////////////
 	//“下一”按钮
 	hNextWordButton = CreateWindow(_T("BUTTON"), _T("下一个"), WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-		450, 340, 100, 30, hWnd, (HMENU)ID_NEXT_WORD_BUTTON, hInst, NULL);
+		450, 350, 100, 30, hWnd, (HMENU)ID_NEXT_WORD_BUTTON, hInst, NULL);
 
 	//////////////////////////////////////////////////////////////////////
 	// 禁用某些功能，直到被激活，TRUE使用，FALSE禁止
@@ -543,15 +554,14 @@ void setCheckState()
 					break;
 				}
 
-
 			}
 		}
 
 	}
-	else if(numberOfItem > 0)
+	else if (numberOfItem > 0)
 	{
-		//没有找到，自动判断
-		//取首个相似度
+		//没有找到相同记录，自动判断相似度大小关系，自动打勾，取打勾结果，添加新纪录
+		//////////////////////////////////////////////////////////////
 		ListView_GetItemText(hDictionaryListView_XH, 0, 7, buf, 256);
 		std::wstring wstr = buf;
 		double biggest;
@@ -563,19 +573,20 @@ void setCheckState()
 
 		}
 
+		//取首个相似度
 		std::vector<unsigned int> indexToCheck;
 		indexToCheck.push_back(0);
 
 		for (unsigned int i = 1; i < numberOfItem; i++)
 		{
 			ListView_GetItemText(hDictionaryListView_XH, i, 7, buf, 256);
-			
-			double similarity;
-			std::wstring str = buf;
-			if (str == L"") {
+			std::wstring wstr = buf;
+
+			if (wstr == L"") {
 				continue;
 			}
 			else {
+				double similarity;
 				similarity = std::stod(buf);
 				if (similarity > biggest)
 				{
@@ -594,6 +605,37 @@ void setCheckState()
 			ListView_SetCheckState(hDictionaryListView_XH, index, TRUE);
 		}
 
+		//////////////////////////////////////////////////////////////
+		//存储选取的id
+		std::vector<std::string> ids;
+		for (unsigned int i = 0; i < numberOfItem; i++)
+		{
+			if (ListView_GetCheckState(hDictionaryListView_XH, i)) {
+
+				TCHAR buffer[256];
+				ListView_GetItemText(hDictionaryListView_XH, i, 0, buffer, 256);
+
+				ids.push_back(WTS_U8(buffer));
+			}
+		}
+
+		//插入新的记录
+		std::vector<std::string> vector;
+		std::string str;
+		str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词语");
+		vector.push_back(str);
+		str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词类");
+		vector.push_back(str);
+		str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_拼音");
+		vector.push_back(str);
+		str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_同形");
+		vector.push_back(str);
+		str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_释义");
+		vector.push_back(str);
+		str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_例句");
+		vector.push_back(str);
+
+		recorder->insertNewRecord(vector, ids);
 	}
 
 }
@@ -616,7 +658,7 @@ void activeControls(bool boolean)
 	EnableWindow(hDictionaryListView_XH, boolean);
 }
 
-void search() 
+void search()
 {
 	TCHAR buff[80] = _T("");
 	GetWindowText(hSearchEdit, buff, 80);
@@ -724,32 +766,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				recorder->updateIDs(ids);
 			}
-			else {
-				//没找到相同记录，插入新的记录
-				std::vector<std::string> vector;
-				std::string str;
-				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词语");
-				vector.push_back(str);
-				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词类");
-				vector.push_back(str);
-				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_拼音");
-				vector.push_back(str);
-				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_同形");
-				vector.push_back(str);
-				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_释义");
-				vector.push_back(str);
-				str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_例句");
-				vector.push_back(str);
+			//else {
+			//	//没找到相同记录，插入新的记录
+			//	std::vector<std::string> vector;
+			//	std::string str;
+			//	str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词语");
+			//	vector.push_back(str);
+			//	str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_词类");
+			//	vector.push_back(str);
+			//	str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_拼音");
+			//	vector.push_back(str);
+			//	str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_同形");
+			//	vector.push_back(str);
+			//	str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_释义");
+			//	vector.push_back(str);
+			//	str = reader->getValueInColumnByRow(rowOfGkb, u8"gkb_例句");
+			//	vector.push_back(str);
 
-				recorder->insertNewRecord(vector, ids);
-			}
+			//	recorder->insertNewRecord(vector, ids);
+			//}
 
 		}
 		break;
 		case ID_PREV_WORD_BUTTON:
 		{
 			if (reader->isExistingFile()) {
-				if (0 < reader->curIsomorphicIndex && reader->curIsomorphicIndex + 1< reader->numberOfIsomorphic) 
+				if (0 < reader->curIsomorphicIndex && reader->curIsomorphicIndex + 1 < reader->numberOfIsomorphic)
 				{
 					reader->curIsomorphicIndex--;
 					refreshMainWindow();
@@ -941,12 +983,12 @@ LRESULT CALLBACK subEditSearchProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 		switch (wParam)
 		{
 		case VK_RETURN:
-			{
-				//Do your stuff
-				search();		
-			}
-			break;  //or return 0; if you don't want to pass it further to def proc
-					//If not your key, skip to default:
+		{
+			//Do your stuff
+			search();
+		}
+		break;  //or return 0; if you don't want to pass it further to def proc
+				//If not your key, skip to default:
 		}
 	default:
 		return CallWindowProc(oldEditSearchProc, hWnd, msg, wParam, lParam);

@@ -120,6 +120,8 @@ bool Recorder::findRecord(const std::string& word, const std::string& pos, const
 	auto ws = wb.active_sheet();
 	auto rows = ws.rows(false);
 	curRow = -1;
+
+	IDs.clear();
 	
 	for (auto& row: rows) {
 		curRow ++;
